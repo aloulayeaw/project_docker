@@ -1,0 +1,26 @@
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.1-stretch-slim as base
+WORKDIR /app
+
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/core/sdk:2.1-stretch as build
+WORKDIR /src
+
+COPY ./appscore .
+
+WORKDIR /src/Services/Jobs.Api
+
+RUN dotnet restore jobs.api.csproj && \
+  dotnet build jobs.api.csproj -c Release -o /app/build
+
+FROM build as publish
+
+RUN dotnet publish jobs.api.csproj -c Release -o /app/publish
+
+FROM base as final
+WORKDIR /app
+
+COPY --from=publish /app/publish .
+
+ENTRYPOINT ["dotnet", "jobs.api.dll"]
